@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import sys
+import os
 import logging
+import argparse
 
 # Filter class to log only messages with level lower than specified
 # http://stackoverflow.com/questions/2302315/how-can-info-and-debug-logging-message-be-sent-to-stdout-and-higher-level-messag/31459386#31459386
@@ -24,22 +26,29 @@ logger.setLevel(logging.DEBUG)
 stdout_handler = logging.StreamHandler(sys.stdout)
 stdout_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
 stdout_handler.addFilter(LevelLessThanFilter(logging.WARNING))
-#stdout_handler.setLevel(logging.DEBUG)
 stdout_handler.setLevel(logging.INFO)
 logger.addHandler(stdout_handler)
 
 # Stderr handler. Outputs warnings, errors and critical messages to stderr
-stdout_handler = logging.StreamHandler(sys.stderr)
-stdout_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
-stdout_handler.setLevel(logging.WARNING)
-logger.addHandler(stdout_handler)
+stderr_handler = logging.StreamHandler(sys.stderr)
+stderr_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
+stderr_handler.setLevel(logging.WARNING)
+logger.addHandler(stderr_handler)
+
+data_file = os.path.expanduser('~/.check-status')
 
 def main():
-  logger.debug('debug message')
-  logger.info('info message')
-  logger.warning('warning message')
-  logger.error('error message')
-  logger.critical('critical message')
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-d', '--debug', dest='debug', action='store_true', default=False)
+  options = parser.parse_args()
+
+  if options.debug:
+    stdout_handler.setLevel(logging.DEBUG)
+
+  logger.info('Starting monitoring script')
+  logger.debug('Script location: {0}'.format(os.path.realpath(__file__)))
+  logger.debug('Data file: {0}'.format(data_file))
+
 
 if __name__ == '__main__':
     exit(main())
