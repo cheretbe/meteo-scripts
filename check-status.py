@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import signal
 import os
 import logging
 import argparse
@@ -42,6 +43,10 @@ def do_check():
   logger.debug('working')
   #1/0
 
+def signal_handler(signum = None, frame = None):
+  logger.info('Caught signal {0}, exiting'.format(signum))
+  sys.exit(0)
+
 def main():
   exit_code = 0
   try:
@@ -56,12 +61,15 @@ def main():
     logger.debug('Script location: {0}'.format(os.path.realpath(__file__)))
     logger.debug('Data file: {0}'.format(data_file))
 
+    for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGQUIT]:
+      signal.signal(sig, signal_handler)
+
     try:
       while True:
         do_check()
         time.sleep(3)
     except KeyboardInterrupt:
-      logger.info('Keyboard interrupt. Exiting')
+      logger.info('Keyboard interrupt, exiting')
   except Exception as e:
     logger.exception("Unhandled exception")
     exit_code = 1
