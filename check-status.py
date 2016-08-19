@@ -4,6 +4,7 @@ import sys
 import os
 import logging
 import argparse
+import time
 
 # Filter class to log only messages with level lower than specified
 # http://stackoverflow.com/questions/2302315/how-can-info-and-debug-logging-message-be-sent-to-stdout-and-higher-level-messag/31459386#31459386
@@ -37,18 +38,36 @@ logger.addHandler(stderr_handler)
 
 data_file = os.path.expanduser('~/.check-status')
 
+def do_check():
+  logger.debug('working')
+  #1/0
+
 def main():
-  parser = argparse.ArgumentParser()
-  parser.add_argument('-d', '--debug', dest='debug', action='store_true', default=False)
-  options = parser.parse_args()
+  exit_code = 0
+  try:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--debug', dest='debug', action='store_true', default=False)
+    options = parser.parse_args()
 
-  if options.debug:
-    stdout_handler.setLevel(logging.DEBUG)
+    if options.debug:
+      stdout_handler.setLevel(logging.DEBUG)
 
-  logger.info('Starting monitoring script')
-  logger.debug('Script location: {0}'.format(os.path.realpath(__file__)))
-  logger.debug('Data file: {0}'.format(data_file))
+    logger.info('Starting monitoring script')
+    logger.debug('Script location: {0}'.format(os.path.realpath(__file__)))
+    logger.debug('Data file: {0}'.format(data_file))
+
+    try:
+      while True:
+        do_check()
+        time.sleep(3)
+    except KeyboardInterrupt:
+      logger.info('Keyboard interrupt. Exiting')
+  except Exception as e:
+    logger.exception("Unhandled exception")
+    exit_code = 1
+
+  return (exit_code)
 
 
 if __name__ == '__main__':
-    exit(main())
+  sys.exit(main())
