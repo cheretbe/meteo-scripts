@@ -3,3 +3,7 @@ Aug 19 23:11:02 meteo-srv weewx[2665]: restx: WindGuru: Failed to publish record
 sqlite3 /var/lib/weewx/weewx.sdb 'select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, windGus t from archive order by dt desc limit 10;'
 sqlite3 /var/lib/weewx/weewx.sdb 'select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, windGus t from archive where dt >= Datetime("2016-08-19 23:10:00") and dt <= Datetime("2016-08-19 23:12:00");'
 sqlite3 /root/temp/weewx.sdb.nowind 'select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, wind Gust from archive where dt = Datetime("2016-08-19 23:11:00");'
+
+conn = sqlite3.connect('/var/lib/weewx/weewx.sdb')
+conn.cursor().execute('select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, windGust from archive order by dt desc limit 10').fetchall()
+conn.close()
