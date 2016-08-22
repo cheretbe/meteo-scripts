@@ -6,6 +6,7 @@ import os
 import logging
 import argparse
 import time
+import subprocess
 
 # Filter class to log only messages with level lower than specified
 # http://stackoverflow.com/questions/2302315/how-can-info-and-debug-logging-message-be-sent-to-stdout-and-higher-level-messag/31459386#31459386
@@ -40,13 +41,43 @@ logger.addHandler(stderr_handler)
 data_file = os.path.expanduser('~/.check-status')
 signals_to_handle = {signal.SIGTERM:'SIGTERM', signal.SIGINT:'SIGINT', signal.SIGHUP:'SIGHUP', signal.SIGQUIT:'SIGQUIT'}
 
+def do_ping():
+  """Pings several targets to check network connectivity.
+
+     Fails only if all the targets have failed. Successful ping of even one of the targets
+     is considered a success. Lost packets for one target considered as target fail.
+
+     Returns:
+       bool: The return value. True for success, False otherwise.
+  """
+  ping_result = False
+  # We use DNS names instead of IPs for Google and OpenDNS NS to ensure that DNS resolution works
+  for ping_target in ['google-public-dns-a.google.com', 'resolver1.opendns.com', 'ya.ru']:
+    # Create ping subprocess
+    ping_subproc = subprocess.Popen(["ping", "-c 3", ping_target], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # Wait for exit and get output
+    for ping_output_line in ping_subproc.communicate()[0].splitlines():
+      logger.debug(ping_output_line)
+    logger.debug('ping return code: {0}'.format(ping_subproc.returncode))
+    # Check exit code
+    if ping_subproc.returncode == 0:
+      ping_result = True
+    else:
+      logger.warning('{0}: ping attempt has failed'.format(ping_target))
+
+  if not(ping_result):
+    logger.error('All ping attempts have failed')
+  return(ping_result)
+
 def do_check():
-  logger.debug('working')
+  logger.debug('Starting check')
+  do_ping()
+  #logger.debug(ping_targets)
   #1/0
 
 # Interrupt signal handler. Does nothing, just logs interruption cause and exits.
 # Handles the following signals:
-# SIGTERM: process termintaion, SIGTERM: terminal interruption, SIGHUP: terminal closing, SIGQUIT: process quit with dump
+# SIGTERM: process termintaion, SIGINT: terminal interruption, SIGHUP: terminal closing, SIGQUIT: process quit with dump
 def signal_handler(signum = None, frame = None):
   logger.info('Caught signal {0} ({1}), exiting'.format(signum, signals_to_handle[signum]))
   sys.exit(0)
