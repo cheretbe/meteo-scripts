@@ -7,6 +7,7 @@ import logging
 import argparse
 import time
 import subprocess
+import sqlite3
 
 # Filter class to log only messages with level lower than specified
 # http://stackoverflow.com/questions/2302315/how-can-info-and-debug-logging-message-be-sent-to-stdout-and-higher-level-messag/31459386#31459386
@@ -40,6 +41,7 @@ logger.addHandler(stderr_handler)
 
 data_file = os.path.expanduser('~/.check-status')
 signals_to_handle = {signal.SIGTERM:'SIGTERM', signal.SIGINT:'SIGINT', signal.SIGHUP:'SIGHUP', signal.SIGQUIT:'SIGQUIT'}
+weewx_db_file = '/var/lib/weewx/weewx.sdb'
 
 def do_ping():
   """Pings several targets to check network connectivity.
@@ -69,9 +71,20 @@ def do_ping():
     logger.error('All ping attempts have failed')
   return(ping_result)
 
+def do_check_db():
+  db_check_result = False
+
+  if os.path.isfile(weewx_db_file):
+    with sqlite3.connect(weewx_db_file) as conn:
+      conn.cursor().execute('select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, windGust from archive order by dt desc limit 10').fetchall()
+  else:
+    logger.error('Weewx DB file {0} does not exist'.format(weewx_db_file))
+  return(db_check_result)
+
 def do_check():
   logger.debug('Starting check')
-  do_ping()
+  #do_ping()
+  do_check_db()
   #logger.debug(ping_targets)
   #1/0
 
