@@ -8,6 +8,8 @@ import argparse
 import time
 import subprocess
 import sqlite3
+import datetime
+import contextlib
 
 # Filter class to log only messages with level lower than specified
 # http://stackoverflow.com/questions/2302315/how-can-info-and-debug-logging-message-be-sent-to-stdout-and-higher-level-messag/31459386#31459386
@@ -72,21 +74,35 @@ def do_ping():
   return(ping_result)
 
 def do_check_db():
-  db_check_result = False
-
-  if os.path.isfile(weewx_db_file):
-    with sqlite3.connect(weewx_db_file) as conn:
-      last_record_time = conn.cursor().execute('SELECT MAX(dateTime) FROM archive').fetchone()
-      #print(last_record_time)
-      print(last_record_time[0])
-      #datetime.datetime.utcfromtimestamp(1472046180)
-      if last_record_time[0] != None:
-        db_check_result = True
-      #last_data = conn.cursor().execute('select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, windGust from archive order by dt desc limit 10').fetchall()
-      #print(type(last_data))
-  else:
+  if not(os.path.isfile(weewx_db_file)):
     logger.error('Weewx DB file {0} does not exist'.format(weewx_db_file))
-  return(db_check_result)
+    return(False)
+
+  with sqlite3.connect(weewx_db_file) as conn:
+    with contextlib.closing(conn.cursor()) as cursor:
+      last_record_time = cursor.execute('SELECT MAX(dateTime) FROM archive').fetchone()
+      if last_record_time[0] == None:
+        logger.error('No records in the Weewx DB file')
+        return(False)
+      if (datetime.datetime.now() - datetime.datetime.fromtimestamp(last_record_time[0])) > datetime.timedelta(minutes=15):
+        logger.error('No records in the Weewx DB file for the last 15min')
+        return(False)
+      wind_records = cursor.execute('SELECT windSpeed, datetime(dateTime, "unixepoch", "localtime") AS dt FROM archive WHERE dt >= datetime("now", "-15 Minute", "localtime")').fetchall()
+      #print(wind_records)
+      has_wind_speed = False
+      for wind_record in wind_records:
+        #print(wind_record)
+        if wind_record[0] != None:
+          has_wind_speed = True
+          break
+      if not(has_wind_speed):
+        logger.error('No wind data for the last 15min in the Weewx DB file')
+        return(False)
+    #print(datetime.datetime.fromtimestamp(last_record_time[0]))
+    #last_data = conn.cursor().execute('select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, windGust from archive order by dt desc limit 10').fetchall()
+    #print(type(last_data))
+
+  return(True)
 
 def do_check():
   logger.debug('Starting check')
