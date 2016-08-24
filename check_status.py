@@ -76,7 +76,14 @@ def do_check_db():
 
   if os.path.isfile(weewx_db_file):
     with sqlite3.connect(weewx_db_file) as conn:
-      conn.cursor().execute('select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, windGust from archive order by dt desc limit 10').fetchall()
+      last_record_time = conn.cursor().execute('SELECT MAX(dateTime) FROM archive').fetchone()
+      #print(last_record_time)
+      print(last_record_time[0])
+      #datetime.datetime.utcfromtimestamp(1472046180)
+      if last_record_time[0] != None:
+        db_check_result = True
+      #last_data = conn.cursor().execute('select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, windGust from archive order by dt desc limit 10').fetchall()
+      #print(type(last_data))
   else:
     logger.error('Weewx DB file {0} does not exist'.format(weewx_db_file))
   return(db_check_result)
