@@ -50,7 +50,7 @@ class do_check_db_FunctionalTest(unittest.TestCase):
     """It logs an error and returns False if DB file does not exist"""
     with mock.patch.object(check_status, 'weewx_db_file', 'sqlite_db_file') as mock_db_file:
       ret_val = check_status.do_check_db()
-    self.assertEqual(ret_val, False)
+    self.assertFalse(ret_val)
     mock_logger_error.assert_called_with('Weewx DB file sqlite_db_file does not exist')
 
   def test_data_table_is_empty(self, mock_logger_error, mock_logger_debug):
@@ -58,7 +58,7 @@ class do_check_db_FunctionalTest(unittest.TestCase):
     db_file_path = self.create_test_db('test1.sdb')
     with mock.patch.object(check_status, 'weewx_db_file', db_file_path) as mock_db_file:
       ret_val = check_status.do_check_db()
-    self.assertEqual(ret_val, False)
+    self.assertFalse(ret_val)
     mock_logger_error.assert_called_with('No records in the Weewx DB file')
 
   def test_data_table_no_recent_records(self, mock_logger_error, mock_logger_debug):
@@ -69,7 +69,7 @@ class do_check_db_FunctionalTest(unittest.TestCase):
       ))
     with mock.patch.object(check_status, 'weewx_db_file', db_file_path) as mock_db_file:
       ret_val = check_status.do_check_db()
-    self.assertEqual(ret_val, False)
+    self.assertFalse(ret_val)
     mock_logger_error.assert_called_with('No records in the Weewx DB file for the last 15min')
 
   def test_data_table_no_recent_wind_data(self, mock_logger_error, mock_logger_debug):
@@ -82,5 +82,18 @@ class do_check_db_FunctionalTest(unittest.TestCase):
       ))
     with mock.patch.object(check_status, 'weewx_db_file', db_file_path) as mock_db_file:
       ret_val = check_status.do_check_db()
-    self.assertEqual(ret_val, False)
+    self.assertFalse(ret_val)
     mock_logger_error.assert_called_with('No wind data for the last 15min in the Weewx DB file')
+
+  def test_data_table_recent_wind_data(self, mock_logger_error, mock_logger_debug):
+    """It returns True if there is at least one wind record for the last 15min"""
+    db_file_path = self.create_test_db('test4.sdb', (
+        (now_as_timestamp(-30), None, 15.6), # current time - 30min
+        (now_as_timestamp(-20), None, 15.5), # current time - 20min
+        (now_as_timestamp(-10), 14.9, 15.1), # current time - 10min
+        (now_as_timestamp(),    None, 16.3)  # current time
+      ))
+    with mock.patch.object(check_status, 'weewx_db_file', db_file_path) as mock_db_file:
+      ret_val = check_status.do_check_db()
+    self.assertTrue(ret_val)
+    mock_logger_error.assert_not_called()

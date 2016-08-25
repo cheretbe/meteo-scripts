@@ -74,6 +74,7 @@ def do_ping():
   return(ping_result)
 
 def do_check_db():
+  logger.debug('Querying Weewx DB file {0}'.format(weewx_db_file))
   if not(os.path.isfile(weewx_db_file)):
     logger.error('Weewx DB file {0} does not exist'.format(weewx_db_file))
     return(False)
@@ -87,20 +88,16 @@ def do_check_db():
       if (datetime.datetime.now() - datetime.datetime.fromtimestamp(last_record_time[0])) > datetime.timedelta(minutes=15):
         logger.error('No records in the Weewx DB file for the last 15min')
         return(False)
-      wind_records = cursor.execute('SELECT windSpeed, datetime(dateTime, "unixepoch", "localtime") AS dt FROM archive WHERE dt >= datetime("now", "-15 Minute", "localtime")').fetchall()
-      #print(wind_records)
+      wind_records = cursor.execute('SELECT windSpeed, datetime(dateTime, "unixepoch", "localtime") AS dt FROM archive WHERE dt >= datetime("now", "-15 Minute", "localtime") ORDER BY dt DESC').fetchall()
       has_wind_speed = False
       for wind_record in wind_records:
-        #print(wind_record)
+        logger.debug(wind_record)
         if wind_record[0] != None:
           has_wind_speed = True
           break
       if not(has_wind_speed):
         logger.error('No wind data for the last 15min in the Weewx DB file')
         return(False)
-    #print(datetime.datetime.fromtimestamp(last_record_time[0]))
-    #last_data = conn.cursor().execute('select datetime(dateTime, "unixepoch", "localtime") as dt, windSpeed, windGust from archive order by dt desc limit 10').fetchall()
-    #print(type(last_data))
 
   return(True)
 
