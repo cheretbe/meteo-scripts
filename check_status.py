@@ -63,7 +63,7 @@ def do_ping():
   """
   ping_result = False
   # We use DNS names instead of IPs for Google and OpenDNS NS to ensure that DNS resolution works
-  for ping_target in ['egoogle-public-dns-a.google.com', 'eresolver1.opendns.com', 'eeeya.ru']:
+  for ping_target in ['google-public-dns-a.google.com', 'resolver1.opendns.com', 'ya.ru']:
     # Create ping subprocess
     ping_subproc = subprocess.Popen(["ping", "-c 3", ping_target], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     # Wait for exit and get output
@@ -128,8 +128,9 @@ def do_check():
     return()
 
   check_result = do_ping()
-  # if check_result:
-  check_result = check_result and do_check_db()
+  # Can't use `and` here because of boolean short-circuit evaluation
+  if not do_check_db():
+    check_result = False
 
   if check_result:
     logger.debug('Check result: Ok')
