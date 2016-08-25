@@ -59,7 +59,7 @@ class do_check_db_FunctionalTest(unittest.TestCase):
     with mock.patch.object(check_status, 'weewx_db_file', db_file_path) as mock_db_file:
       ret_val = check_status.do_check_db()
     self.assertFalse(ret_val)
-    mock_logger_error.assert_called_with('No records in the Weewx DB file')
+    mock_logger_error.assert_called_with('No records in the Weewx DB file for the last 15min')
 
   def test_data_table_no_recent_records(self, mock_logger_error, mock_logger_debug):
     """It logs an error and returns False if there are no records for the last 15min"""

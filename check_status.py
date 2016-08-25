@@ -8,7 +8,6 @@ import argparse
 import time
 import subprocess
 import sqlite3
-import datetime
 import contextlib
 
 # Filter class to log only messages with level lower than specified
@@ -74,6 +73,14 @@ def do_ping():
   return(ping_result)
 
 def do_check_db():
+  """Checks wind records presence in the Weewx DB.
+
+     Returns True if there is at least one valid (non-NULL) wind record with
+     timestamp within last 15 minutes.
+
+     Returns:
+       bool: The return value. True for success, False otherwise.
+  """
   logger.debug('Querying Weewx DB file {0}'.format(weewx_db_file))
   if not(os.path.isfile(weewx_db_file)):
     logger.error('Weewx DB file {0} does not exist'.format(weewx_db_file))
@@ -81,14 +88,12 @@ def do_check_db():
 
   with sqlite3.connect(weewx_db_file) as conn:
     with contextlib.closing(conn.cursor()) as cursor:
-      last_record_time = cursor.execute('SELECT MAX(dateTime) FROM archive').fetchone()
-      if last_record_time[0] == None:
-        logger.error('No records in the Weewx DB file')
-        return(False)
-      if (datetime.datetime.now() - datetime.datetime.fromtimestamp(last_record_time[0])) > datetime.timedelta(minutes=15):
+      wind_records = cursor.execute('SELECT windSpeed, datetime(dateTime, "unixepoch", "localtime") AS dt, dateTime FROM archive WHERE dt >= datetime("now", "-15 Minute", "localtime") ORDER BY dt DESC').fetchall()
+
+      if len(wind_records) == 0:
         logger.error('No records in the Weewx DB file for the last 15min')
         return(False)
-      wind_records = cursor.execute('SELECT windSpeed, datetime(dateTime, "unixepoch", "localtime") AS dt FROM archive WHERE dt >= datetime("now", "-15 Minute", "localtime") ORDER BY dt DESC').fetchall()
+
       has_wind_speed = False
       for wind_record in wind_records:
         logger.debug(wind_record)
