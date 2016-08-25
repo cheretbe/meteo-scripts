@@ -9,6 +9,7 @@ import time
 import subprocess
 import sqlite3
 import contextlib
+import datetime
 
 # Filter class to log only messages with level lower than specified
 # http://stackoverflow.com/questions/2302315/how-can-info-and-debug-logging-message-be-sent-to-stdout-and-higher-level-messag/31459386#31459386
@@ -44,6 +45,13 @@ data_file = os.path.expanduser('~/.check-status')
 signals_to_handle = {signal.SIGTERM:'SIGTERM', signal.SIGINT:'SIGINT', signal.SIGHUP:'SIGHUP', signal.SIGQUIT:'SIGQUIT'}
 weewx_db_file = '/var/lib/weewx/weewx.sdb'
 
+def get_system_uptime():
+  # proc/uptime contains two numbers: the uptime of the system (seconds), and the
+  # amount of time spent in idle process (seconds). We read the first number and
+  # convert it to timedelta, rounding to seconds
+  with open('/proc/uptime', 'r') as f:
+    return(datetime.timedelta(seconds=round(float(f.readline().split()[0]))))
+
 def do_ping():
   """Pings several targets to check network connectivity.
 
@@ -55,7 +63,7 @@ def do_ping():
   """
   ping_result = False
   # We use DNS names instead of IPs for Google and OpenDNS NS to ensure that DNS resolution works
-  for ping_target in ['google-public-dns-a.google.com', 'resolver1.opendns.com', 'ya.ru']:
+  for ping_target in ['egoogle-public-dns-a.google.com', 'eresolver1.opendns.com', 'eeeya.ru']:
     # Create ping subprocess
     ping_subproc = subprocess.Popen(["ping", "-c 3", ping_target], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     # Wait for exit and get output
@@ -88,7 +96,10 @@ def do_check_db():
 
   with sqlite3.connect(weewx_db_file) as conn:
     with contextlib.closing(conn.cursor()) as cursor:
-      wind_records = cursor.execute('SELECT windSpeed, datetime(dateTime, "unixepoch", "localtime") AS dt, dateTime FROM archive WHERE dt >= datetime("now", "-15 Minute", "localtime") ORDER BY dt DESC').fetchall()
+      wind_records = cursor.execute(
+        'SELECT windSpeed, datetime(dateTime, "unixepoch", "localtime") AS dt, ' \
+        'dateTime FROM archive WHERE dt >= datetime("now", "-15 Minute", "localtime") ' \
+        'ORDER BY dt DESC').fetchall()
 
       if len(wind_records) == 0:
         logger.error('No records in the Weewx DB file for the last 15min')
@@ -106,12 +117,25 @@ def do_check_db():
 
   return(True)
 
+def do_reboot():
+  pass
+
 def do_check():
-  logger.debug('Starting check')
-  #do_ping()
-  do_check_db()
-  #logger.debug(ping_targets)
-  #1/0
+  logger.debug('-- Starting check --')
+  uptime = get_system_uptime()
+  if uptime < datetime.timedelta(minutes=5):
+    logger.info("System uptime is less than 5 minutes ({0}). Skipping check".format(uptime))
+    return()
+
+  check_result = do_ping()
+  # if check_result:
+  check_result = check_result and do_check_db()
+
+  if check_result:
+    logger.debug('Check result: Ok')
+  else:
+    logger.info('Check result: Failure')
+    do_reboot()
 
 # Interrupt signal handler. Does nothing, just logs interruption cause and exits.
 # Handles the following signals:
@@ -149,7 +173,6 @@ def main():
     exit_code = 1
 
   return (exit_code)
-
 
 if __name__ == '__main__':
   sys.exit(main())
