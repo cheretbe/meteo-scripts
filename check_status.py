@@ -10,6 +10,10 @@ import subprocess
 import sqlite3
 import contextlib
 import datetime
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser  # ver. < 3.0
 
 # Filter class to log only messages with level lower than specified
 # http://stackoverflow.com/questions/2302315/how-can-info-and-debug-logging-message-be-sent-to-stdout-and-higher-level-messag/31459386#31459386
@@ -51,6 +55,19 @@ def get_system_uptime():
   # convert it to timedelta, rounding to seconds
   with open('/proc/uptime', 'r') as f:
     return(datetime.timedelta(seconds=round(float(f.readline().split()[0]))))
+
+def read_reboot_cycle():
+  reboot_cycle = None
+  try:
+    if os.path.isfile(data_file):
+      config_data = ConfigParser()
+      config_data.read(data_file)
+      if config_data.has_section('check_status'):
+        if config_data.has_option('check_status', 'reboot_cycle'):
+          reboot_cycle = int(config_data.get('check_status', 'reboot_cycle'))
+  except Exception as e:
+    logger.warning('Error reading data from {0}: {1}'.format(data_file, str(e)))
+  return(reboot_cycle)
 
 def do_ping():
   """Pings several targets to check network connectivity.
@@ -118,7 +135,15 @@ def do_check_db():
   return(True)
 
 def do_reboot():
-  pass
+  # pass
+  # min_reboot_cycle = datetime.timedelta(minutes=15)
+
+  config_data.add_section('check_status')
+  config_data.set('check_status', 'previous_reboot_cycle', int(min_reboot_cycle.total_seconds() / 60))
+  # int(min_reboot_cycle.total_seconds() / 60)
+
+  with open(data_file, 'w') as config_file:
+    config_data.write(config_file)
 
 def do_check():
   logger.debug('-- Starting check --')
@@ -134,6 +159,7 @@ def do_check():
 
   if check_result:
     logger.debug('Check result: Ok')
+    #TODO: Reset reboot cycle record in data_file
   else:
     logger.info('Check result: Failure')
     do_reboot()

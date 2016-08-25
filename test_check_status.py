@@ -97,3 +97,79 @@ class do_check_db_FunctionalTest(unittest.TestCase):
       ret_val = check_status.do_check_db()
     self.assertTrue(ret_val)
     mock_logger_error.assert_not_called()
+
+@mock.patch('check_status.logger.warning')
+class read_reboot_cycle_FunctionalTest(unittest.TestCase):
+  """Functional tests for 'read_reboot_cycle' function"""
+
+  def setUp(self):
+    # Create a temporary directory
+    self.test_dir = tempfile.mkdtemp()
+
+  def tearDown(self):
+    # Remove the directory after the test
+    shutil.rmtree(self.test_dir)
+
+  def create_data_file(self, df_name, df_contents=()):
+    df_full_path = os.path.join(self.test_dir, df_name)
+    with open(df_full_path, 'w') as f:
+      for df_line in df_contents:
+        f.write(df_line)
+    return(df_full_path)
+
+  def test_file_doesnt_exist(self, mock_logger_warning):
+    with mock.patch.object(check_status, 'data_file', 'non_existent_data_file') as mock_config_file:
+      ret_val = check_status.read_reboot_cycle()
+    self.assertEqual(ret_val, None)
+    mock_logger_warning.assert_not_called()
+
+  def test_file_exists_empty(self, mock_logger_warning):
+    df_full_path = self.create_data_file('test1')
+    with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
+      ret_val = check_status.read_reboot_cycle()
+    self.assertEqual(ret_val, None)
+    mock_logger_warning.assert_not_called()
+
+  def test_file_exists_malformed(self, mock_logger_warning):
+    df_full_path = self.create_data_file('test2', ('[section'))
+    with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
+      ret_val = check_status.read_reboot_cycle()
+    self.assertEqual(ret_val, None)
+    mock_logger_warning.assert_called_once()
+
+  def test_file_exists_no_section(self, mock_logger_warning):
+    df_full_path = self.create_data_file('test3', ('[section]'))
+    with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
+      ret_val = check_status.read_reboot_cycle()
+    self.assertEqual(ret_val, None)
+    mock_logger_warning.assert_not_called()
+
+  def test_file_exists_no_value(self, mock_logger_warning):
+    df_full_path = self.create_data_file('test4', (
+        '[check_status]\n',
+        'other_parameter=other_value'
+      ))
+    with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
+      ret_val = check_status.read_reboot_cycle()
+    self.assertEqual(ret_val, None)
+    mock_logger_warning.assert_not_called()
+
+  def test_file_exists_has_correct_value(self, mock_logger_warning):
+    df_full_path = self.create_data_file('test5', (
+        '[check_status]\n',
+        'reboot_cycle=30'
+      ))
+    with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
+      ret_val = check_status.read_reboot_cycle()
+    self.assertEqual(ret_val, 30)
+    mock_logger_warning.assert_not_called()
+
+  def test_file_exists_has_incorrect_value(self, mock_logger_warning):
+    df_full_path = self.create_data_file('test6', (
+        '[check_status]\n',
+        'reboot_cycle=wrong-int'
+      ))
+    with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
+      ret_val = check_status.read_reboot_cycle()
+    self.assertEqual(ret_val, None)
+    mock_logger_warning.assert_called_once()
