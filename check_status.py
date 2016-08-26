@@ -48,6 +48,14 @@ logger.addHandler(stderr_handler)
 data_file = os.path.expanduser('~/.check-status')
 signals_to_handle = {signal.SIGTERM:'SIGTERM', signal.SIGINT:'SIGINT', signal.SIGHUP:'SIGHUP', signal.SIGQUIT:'SIGQUIT'}
 weewx_db_file = '/var/lib/weewx/weewx.sdb'
+reboot_timeouts_map = {
+  # previous_timeout: current_timeout
+  None: 15,
+  15:   30,
+  30:   180, # 3h
+  180:  720, # 3h, 12h
+  720:  720  # 12h
+}
 
 def get_system_uptime():
   # proc/uptime contains two numbers: the uptime of the system (seconds), and the
@@ -56,18 +64,18 @@ def get_system_uptime():
   with open('/proc/uptime', 'r') as f:
     return(datetime.timedelta(seconds=round(float(f.readline().split()[0]))))
 
-def read_reboot_cycle():
-  reboot_cycle = None
+def read_reboot_timeout():
+  reboot_timeout = None
   try:
     if os.path.isfile(data_file):
       config_data = ConfigParser()
       config_data.read(data_file)
       if config_data.has_section('check_status'):
-        if config_data.has_option('check_status', 'reboot_cycle'):
-          reboot_cycle = int(config_data.get('check_status', 'reboot_cycle'))
+        if config_data.has_option('check_status', 'reboot_timeout'):
+          reboot_timeout = int(config_data.get('check_status', 'reboot_timeout'))
   except Exception as e:
     logger.warning('Error reading data from {0}: {1}'.format(data_file, str(e)))
-  return(reboot_cycle)
+  return(reboot_timeout)
 
 def do_ping():
   """Pings several targets to check network connectivity.
@@ -135,15 +143,29 @@ def do_check_db():
   return(True)
 
 def do_reboot():
-  # pass
-  # min_reboot_cycle = datetime.timedelta(minutes=15)
+  previous_reboot_timeout = read_reboot_timeout()
+  try:
+    reboot_timeout = reboot_timeouts_map[previous_reboot_timeout]
+  except:
+    # print('there you go')
+    reboot_timeout = reboot_timeouts_map[None]
+  logger.debug('previous_reboot_timeout: {0}, reboot_timeout: {1}'.format(
+    previous_reboot_timeout, reboot_timeout))
 
-  config_data.add_section('check_status')
-  config_data.set('check_status', 'previous_reboot_cycle', int(min_reboot_cycle.total_seconds() / 60))
-  # int(min_reboot_cycle.total_seconds() / 60)
+  # print(previous_reboot_timeout, reboot_timeout)
 
-  with open(data_file, 'w') as config_file:
-    config_data.write(config_file)
+  uptime = get_system_uptime()
+  reboot_timeout = datetime.timedelta(minutes=reboot_timeout)
+  if uptime > reboot_timeout:
+    # TODO: write current timeout value
+    logger.warning('*** Rebooting the system ***')
+    os.system('sudo reboot')
+  else:
+    logger.info('System uptime ({0}) is less then the minimum, allowed before ' \
+      'reboot ({1}). Skipping reboot'.format(uptime, reboot_timeout))
+
+  # with open(data_file, 'w') as config_file:
+  #   config_data.write(config_file)
 
 def do_check():
   logger.debug('-- Starting check --')

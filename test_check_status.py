@@ -99,8 +99,8 @@ class do_check_db_FunctionalTest(unittest.TestCase):
     mock_logger_error.assert_not_called()
 
 @mock.patch('check_status.logger.warning')
-class read_reboot_cycle_FunctionalTest(unittest.TestCase):
-  """Functional tests for 'read_reboot_cycle' function"""
+class read_reboot_timeout_FunctionalTest(unittest.TestCase):
+  """Functional tests for 'read_reboot_timeout' function"""
 
   def setUp(self):
     # Create a temporary directory
@@ -119,28 +119,28 @@ class read_reboot_cycle_FunctionalTest(unittest.TestCase):
 
   def test_file_doesnt_exist(self, mock_logger_warning):
     with mock.patch.object(check_status, 'data_file', 'non_existent_data_file') as mock_config_file:
-      ret_val = check_status.read_reboot_cycle()
+      ret_val = check_status.read_reboot_timeout()
     self.assertEqual(ret_val, None)
     mock_logger_warning.assert_not_called()
 
   def test_file_exists_empty(self, mock_logger_warning):
     df_full_path = self.create_data_file('test1')
     with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
-      ret_val = check_status.read_reboot_cycle()
+      ret_val = check_status.read_reboot_timeout()
     self.assertEqual(ret_val, None)
     mock_logger_warning.assert_not_called()
 
   def test_file_exists_malformed(self, mock_logger_warning):
     df_full_path = self.create_data_file('test2', ('[section'))
     with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
-      ret_val = check_status.read_reboot_cycle()
+      ret_val = check_status.read_reboot_timeout()
     self.assertEqual(ret_val, None)
     mock_logger_warning.assert_called_once()
 
   def test_file_exists_no_section(self, mock_logger_warning):
     df_full_path = self.create_data_file('test3', ('[section]'))
     with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
-      ret_val = check_status.read_reboot_cycle()
+      ret_val = check_status.read_reboot_timeout()
     self.assertEqual(ret_val, None)
     mock_logger_warning.assert_not_called()
 
@@ -150,26 +150,44 @@ class read_reboot_cycle_FunctionalTest(unittest.TestCase):
         'other_parameter=other_value'
       ))
     with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
-      ret_val = check_status.read_reboot_cycle()
+      ret_val = check_status.read_reboot_timeout()
     self.assertEqual(ret_val, None)
     mock_logger_warning.assert_not_called()
 
   def test_file_exists_has_correct_value(self, mock_logger_warning):
     df_full_path = self.create_data_file('test5', (
         '[check_status]\n',
-        'reboot_cycle=30'
+        'reboot_timeout=30'
       ))
     with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
-      ret_val = check_status.read_reboot_cycle()
+      ret_val = check_status.read_reboot_timeout()
     self.assertEqual(ret_val, 30)
     mock_logger_warning.assert_not_called()
 
   def test_file_exists_has_incorrect_value(self, mock_logger_warning):
     df_full_path = self.create_data_file('test6', (
         '[check_status]\n',
-        'reboot_cycle=wrong-int'
+        'reboot_timeout=wrong-int'
       ))
     with mock.patch.object(check_status, 'data_file', df_full_path) as mock_config_file:
-      ret_val = check_status.read_reboot_cycle()
+      ret_val = check_status.read_reboot_timeout()
     self.assertEqual(ret_val, None)
     mock_logger_warning.assert_called_once()
+
+@mock.patch('check_status.logger')
+@mock.patch('check_status.read_reboot_timeout')
+@mock.patch('check_status.get_system_uptime')
+@mock.patch('check_status.os.system')
+class do_reboot_UnitTest(unittest.TestCase):
+  """Unit tests for 'do_reboot' function"""
+  def test_reboot_is_allowed(self, mock_os_system, mock_get_system_uptime,
+      mock_read_reboot_timeout, mock_logger):
+    mock_read_reboot_timeout.return_value = 15
+    mock_get_system_uptime.return_value = datetime.timedelta(minutes=31)
+    check_status.do_reboot()
+    mock_os_system.assert_called_with('sudo reboot')
+
+    mock_read_reboot_timeout.return_value = None
+    mock_get_system_uptime.return_value = datetime.timedelta(minutes=16)
+    check_status.do_reboot()
+    mock_os_system.assert_called_with('sudo reboot')
