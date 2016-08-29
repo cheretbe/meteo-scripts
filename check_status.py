@@ -77,6 +77,13 @@ def read_reboot_timeout():
     logger.warning('Error reading data from {0}: {1}'.format(data_file, str(e)))
   return(reboot_timeout)
 
+def write_reboot_timeout(reboot_timeout):
+  config_data = ConfigParser()
+  config_data.add_section('check_status')
+  config_data.set('check_status', 'reboot_timeout', str(reboot_timeout))
+  with open(data_file, "w") as f:
+    config_data.write(f)
+
 def do_ping():
   """Pings several targets to check network connectivity.
 
@@ -145,19 +152,18 @@ def do_check_db():
 def do_reboot():
   previous_reboot_timeout = read_reboot_timeout()
   try:
-    reboot_timeout = reboot_timeouts_map[previous_reboot_timeout]
+    reboot_timeout_minutes = reboot_timeouts_map[previous_reboot_timeout]
   except:
-    # print('there you go')
-    reboot_timeout = reboot_timeouts_map[None]
-  logger.debug('previous_reboot_timeout: {0}, reboot_timeout: {1}'.format(
-    previous_reboot_timeout, reboot_timeout))
-
-  # print(previous_reboot_timeout, reboot_timeout)
+    reboot_timeout_minutes = reboot_timeouts_map[None]
+  logger.debug('previous_reboot_timeout: {0}, reboot_timeout_minutes: {1}'.format(
+    previous_reboot_timeout, reboot_timeout_minutes))
+  #print('previous_reboot_timeout: {0}, reboot_timeout_minutes: {1}'.format(
+  #  previous_reboot_timeout, reboot_timeout_minutes))
 
   uptime = get_system_uptime()
-  reboot_timeout = datetime.timedelta(minutes=reboot_timeout)
+  reboot_timeout = datetime.timedelta(minutes=reboot_timeout_minutes)
   if uptime > reboot_timeout:
-    # TODO: write current timeout value
+    write_reboot_timeout(reboot_timeout_minutes)
     logger.warning('*** Rebooting the system ***')
     os.system('sudo reboot')
   else:
