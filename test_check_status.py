@@ -193,30 +193,47 @@ class do_reboot_UnitTest(unittest.TestCase):
     mock_os_system.assert_called_with('sudo reboot')
 
 class reboot_sequence_IntegrationTest(unittest.TestCase):
+  """Integration tests to ensure proper reboot timeouts on different stages"""
+
   @mock.patch('check_status.logger')
-  @mock.patch('check_status.read_reboot_timeout')
   @mock.patch('check_status.get_system_uptime')
+  @mock.patch('check_status.do_ping')
+  @mock.patch('check_status.do_check_db')
   @mock.patch('check_status.os.system')
-  def mock_reboot(self, prev_reboot_timeout, uptime, mock_os_system,
-      mock_get_system_uptime, mock_read_reboot_timeout, mock_logger):
-    mock_read_reboot_timeout.return_value = prev_reboot_timeout
-    mock_get_system_uptime.return_value = datetime.timedelta(minutes=uptime)
-    check_status.do_reboot()
-    mock_os_system.assert_called_with('sudo reboot')
-    # print(prev_reboot_timeout)
+  def run_sequence(self, initial_reboot_timeout, call_sequence,
+      mock_os_system, mock_do_check_db, mock_do_ping, mock_get_system_uptime,
+      mock_logger):
+    data_file = os.path.expanduser('~/.check-status')
+    try:
+      if initial_reboot_timeout != None:
+        with open(data_file, 'w') as f:
+          f.write('[check_status]\n' \
+                  'reboot_timeout={0}'.format(initial_reboot_timeout))
+      for call in call_sequence:
+        mock_get_system_uptime.return_value = datetime.timedelta(minutes=call['uptime'])
+        mock_do_ping.return_value = call['ping_result']
+        mock_do_check_db.return_value = call['db_result']
+        mock_os_system.reset_mock()
 
-  def run_sequence(self, initial_reboot_timeout, call_sequence):
-    for call in call_sequence:
-      print(call['uptime'])
+        check_status.do_check()
 
+        if call['expect_reboot']:
+          mock_os_system.assert_called_with('sudo reboot')
+        else:
+          mock_os_system.assert_not_called()
 
-  def test_helper(self):
-    # print("there you go")
-    # self.mock_reboot(prev_reboot_timeout=None, uptime=122)
-    # self.mock_reboot(None, 122)
-    # self.run_sequence("aaa")
-    self.run_sequence(initial_reboot_timeout=None, call_sequence=(
-        {'uptime': 15, 'expect_reboot': False},
-        {'uptime': 30, 'expect_reboot': False},
-        {'uptime': 45, 'expect_reboot': True}
-      ))
+    finally:
+      if os.path.isfile(data_file):
+        os.remove(data_file)
+
+  def test_reboot_sequence_1(self):
+    self.run_sequence(None, (
+      {'uptime': 4,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 14, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 16, 'ping_result': False, 'db_result': True, 'expect_reboot': True},
+      {'uptime': 4,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 14, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 16, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 29, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 31, 'ping_result': False, 'db_result': True, 'expect_reboot': True}
+    ))
