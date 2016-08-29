@@ -191,3 +191,32 @@ class do_reboot_UnitTest(unittest.TestCase):
     mock_get_system_uptime.return_value = datetime.timedelta(minutes=16)
     check_status.do_reboot()
     mock_os_system.assert_called_with('sudo reboot')
+
+class reboot_sequence_IntegrationTest(unittest.TestCase):
+  @mock.patch('check_status.logger')
+  @mock.patch('check_status.read_reboot_timeout')
+  @mock.patch('check_status.get_system_uptime')
+  @mock.patch('check_status.os.system')
+  def mock_reboot(self, prev_reboot_timeout, uptime, mock_os_system,
+      mock_get_system_uptime, mock_read_reboot_timeout, mock_logger):
+    mock_read_reboot_timeout.return_value = prev_reboot_timeout
+    mock_get_system_uptime.return_value = datetime.timedelta(minutes=uptime)
+    check_status.do_reboot()
+    mock_os_system.assert_called_with('sudo reboot')
+    # print(prev_reboot_timeout)
+
+  def run_sequence(self, initial_reboot_timeout, call_sequence):
+    for call in call_sequence:
+      print(call['uptime'])
+
+
+  def test_helper(self):
+    # print("there you go")
+    # self.mock_reboot(prev_reboot_timeout=None, uptime=122)
+    # self.mock_reboot(None, 122)
+    # self.run_sequence("aaa")
+    self.run_sequence(initial_reboot_timeout=None, call_sequence=(
+        {'uptime': 15, 'expect_reboot': False},
+        {'uptime': 30, 'expect_reboot': False},
+        {'uptime': 45, 'expect_reboot': True}
+      ))
