@@ -176,12 +176,13 @@ class read_reboot_timeout_FunctionalTest(unittest.TestCase):
 
 @mock.patch('check_status.logger')
 @mock.patch('check_status.read_reboot_timeout')
+@mock.patch('check_status.write_reboot_timeout')
 @mock.patch('check_status.get_system_uptime')
 @mock.patch('check_status.os.system')
 class do_reboot_UnitTest(unittest.TestCase):
   """Unit tests for 'do_reboot' function"""
   def test_reboot_is_allowed(self, mock_os_system, mock_get_system_uptime,
-      mock_read_reboot_timeout, mock_logger):
+      mock_write_reboot_timeout, mock_read_reboot_timeout, mock_logger):
     mock_read_reboot_timeout.return_value = 15
     mock_get_system_uptime.return_value = datetime.timedelta(minutes=31)
     check_status.do_reboot()
@@ -227,13 +228,43 @@ class reboot_sequence_IntegrationTest(unittest.TestCase):
         os.remove(data_file)
 
   def test_reboot_sequence_1(self):
+    """Reboot sequence when ping always fails"""
     self.run_sequence(None, (
-      {'uptime': 4,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
-      {'uptime': 14, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
-      {'uptime': 16, 'ping_result': False, 'db_result': True, 'expect_reboot': True},
-      {'uptime': 4,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
-      {'uptime': 14, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
-      {'uptime': 16, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
-      {'uptime': 29, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
-      {'uptime': 31, 'ping_result': False, 'db_result': True, 'expect_reboot': True}
+      {'uptime': 4,   'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 14,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 16,  'ping_result': False, 'db_result': True, 'expect_reboot': True},
+      # reboot
+      {'uptime': 4,   'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 14,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 16,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 29,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 31,  'ping_result': False, 'db_result': True, 'expect_reboot': True},
+      # reboot
+      {'uptime': 4,   'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 14,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 16,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 29,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 31,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 179, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 181, 'ping_result': False, 'db_result': True, 'expect_reboot': True},
+      # reboot
+      {'uptime': 4,   'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 14,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 16,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 29,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 31,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 179, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 181, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 719, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 721, 'ping_result': False, 'db_result': True, 'expect_reboot': True},
+      # reboot
+      {'uptime': 4,   'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 14,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 16,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 29,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 31,  'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 179, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 181, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 719, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 721, 'ping_result': False, 'db_result': True, 'expect_reboot': True}
     ))

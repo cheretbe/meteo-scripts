@@ -157,7 +157,7 @@ def do_reboot():
     reboot_timeout_minutes = reboot_timeouts_map[None]
   logger.debug('previous_reboot_timeout: {0}, reboot_timeout_minutes: {1}'.format(
     previous_reboot_timeout, reboot_timeout_minutes))
-  #print('previous_reboot_timeout: {0}, reboot_timeout_minutes: {1}'.format(
+  # print('previous_reboot_timeout: {0}, reboot_timeout_minutes: {1}'.format(
   #  previous_reboot_timeout, reboot_timeout_minutes))
 
   uptime = get_system_uptime()
