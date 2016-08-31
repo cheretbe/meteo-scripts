@@ -9,7 +9,7 @@ It sends administrative emails or reboots the server as needed.
 * Supervisord
 * Аккаунт, для которого в sudoers разрешена перезагрузка без пароля
 
-## Установка и настройка (Ubuntu 16.04)
+### Установка и настройка (Ubuntu 16.04)
 
 Предполагается, что текущее имя пользователя `meteo`. Если это не так, нужно
 будет откорректировать настройки в файле `meteo_check_status.conf` (см. далее).
