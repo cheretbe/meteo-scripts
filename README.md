@@ -16,7 +16,7 @@ It sends administrative emails or reboots the server as needed.
 
 Обновляем информацию о пакетах
 ```
-apt-get update
+sudo apt-get update
 ```
 
 Скачиваем и устанавливаем weewx. Уточнить текущую версию на http://weewx.com/downloads/.
