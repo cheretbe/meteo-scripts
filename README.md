@@ -60,6 +60,12 @@ debug = 0
         restful_services = weewx.restx.StdStationRegistry, weewx.restx.StdWunderground, weewx.restx.StdPWSweather, weewx.restx.StdCWOP, weewx.restx.StdWOW, weewx.restx.StdAWEKAS, user.windguru.WindGuru
 ```
 
+Параметр `post_interval` в плагине WindGure на самом деле не задаёт интервал отправки
+данных. Он означает "отправлять данные не чаще": Более подробно здесь
+https://groups.google.com/d/msg/weewx-user/Ot4O3Yu4rwg/8vAuQa5bEAAJ
+
+Частота отправки данных определяется периодом опроса станции
+
 Изменение периода опроса станции на 1 минуту (сервис weewx должен быть остановлен):
 ```
 wee_device --set-interval=1
