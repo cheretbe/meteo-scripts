@@ -97,8 +97,8 @@ sudo service supervisor start
 ```
 
 Лог скрипта находится в файле `/var/log/supervisor/meteo_check_status.log`
-Остановить или запустить только скрипт, не затрагивая другие сервисы superviosrd
-(если есть):
+Остановить или запустить только скрипт, не затрагивая другие сервисы supervisord
+(если они есть):
 ```
 sudo supervisorctl stop meteo_check_status
 sudo supervisorctl start meteo_check_status
