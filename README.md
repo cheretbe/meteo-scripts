@@ -60,6 +60,14 @@ debug = 0
         restful_services = weewx.restx.StdStationRegistry, weewx.restx.StdWunderground, weewx.restx.StdPWSweather, weewx.restx.StdCWOP, weewx.restx.StdWOW, weewx.restx.StdAWEKAS, user.windguru.WindGuru
 ```
 
+Изменение периода опроса станции на 1 минуту (сервис weewx должен быть остановлен):
+```
+wee_device --set-interval=1
+# Просмотр текущей настройки (здесь она называется "read_period")
+wee_device --info
+wee_device --info | grep read_period
+```
+
 Устанавливаем supervisord
 ```
 sudo apt-get -y install supervisor
