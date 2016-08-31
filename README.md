@@ -29,6 +29,37 @@ sudo apt-get -f -y install
 
 Настройки в файле `/etc/weewx/weewx.conf`
 
+Пример реальных настроек для метеостанции Dream Link WH1080 с драйвером FineOffsetUSB
+и отправкой данных на WindGuru с помощью плагина https://github.com/claudobahn/weewx-windguru.
+Приведены только настройки, отличающиеся от настроек по умолчанию
+```
+# если что-то не работает, для отладки можно ставить debug = 1 или debug = 2
+debug = 0
+
+[Station]
+    location = "Baltiysk, Kaliningrad Region, Russia"
+    latitude = 54.660484
+    longitude = 19.892456
+    altitude = 10, meter
+    station_type = FineOffsetUSB
+    week_start = 0
+
+[FineOffsetUSB]
+    model = WA1091
+    polling_interval = 60
+    driver = weewx.drivers.fousb
+
+[StdRESTful]
+    [[WindGuru]]
+        password = pwd
+        station_id = id
+        post_interval = 60
+
+[Engine]
+    [[Services]]
+        restful_services = weewx.restx.StdStationRegistry, weewx.restx.StdWunderground, weewx.restx.StdPWSweather, weewx.restx.StdCWOP, weewx.restx.StdWOW, weewx.restx.StdAWEKAS, user.windguru.WindGuru
+```
+
 Устанавливаем supervisord
 ```
 sudo apt-get -y install supervisor
