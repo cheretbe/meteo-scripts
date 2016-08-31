@@ -45,7 +45,7 @@ stderr_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(mess
 stderr_handler.setLevel(logging.WARNING)
 logger.addHandler(stderr_handler)
 
-data_file = os.path.expanduser('~/.check-status')
+data_file = os.path.expanduser('~/.meteo_check_status')
 signals_to_handle = {signal.SIGTERM:'SIGTERM', signal.SIGINT:'SIGINT', signal.SIGHUP:'SIGHUP', signal.SIGQUIT:'SIGQUIT'}
 weewx_db_file = '/var/lib/weewx/weewx.sdb'
 reboot_timeouts_map = {
@@ -70,17 +70,17 @@ def read_reboot_timeout():
     if os.path.isfile(data_file):
       config_data = ConfigParser()
       config_data.read(data_file)
-      if config_data.has_section('check_status'):
-        if config_data.has_option('check_status', 'reboot_timeout'):
-          reboot_timeout = int(config_data.get('check_status', 'reboot_timeout'))
+      if config_data.has_section('meteo_check_status'):
+        if config_data.has_option('meteo_check_status', 'reboot_timeout'):
+          reboot_timeout = int(config_data.get('meteo_check_status', 'reboot_timeout'))
   except Exception as e:
     logger.warning('Error reading data from {0}: {1}'.format(data_file, str(e)))
   return(reboot_timeout)
 
 def write_reboot_timeout(reboot_timeout):
   config_data = ConfigParser()
-  config_data.add_section('check_status')
-  config_data.set('check_status', 'reboot_timeout', str(reboot_timeout))
+  config_data.add_section('meteo_check_status')
+  config_data.set('meteo_check_status', 'reboot_timeout', str(reboot_timeout))
   with open(data_file, "w") as f:
     config_data.write(f)
 

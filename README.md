@@ -12,7 +12,7 @@ It sends administrative emails or reboots the server as needed.
 ## Установка и настройка (Ubuntu 16.04)
 
 Предполагается, что текущее имя пользователя `meteo`. Если это не так, нужно
-будет откорректировать настройки в файле `check_status.conf` (см. далее).
+будет откорректировать настройки в файле `meteo_check_status.conf` (см. далее).
 
 Обновляем информацию о пакетах
 ```
@@ -34,6 +34,15 @@ sudo apt-get -f -y install
 sudo apt-get -y install supervisor
 ```
 
+Разрешаем пользователю `meteo` перезапуск без ввода пароля
+```
+sudo visudo
+```
+Добавить строку
+```
+meteo ALL=NOPASSWD: /sbin/shutdown -r +1
+```
+
 Скачиваем скрип мониторинга
 ```
 cd ~
@@ -41,14 +50,14 @@ git clone https://github.com/cheretbe/meteo-scripts.git
 ```
 
 Настраиваем работу скрипта в качестве сервиса. Если имя пользователя не `meteo`,
-то нужно откорректировать настройки в файле `/etc/supervisor/conf.d/check_status.conf`.
+то нужно откорректировать настройки в файле `/etc/supervisor/conf.d/meteo_check_status.conf`.
 ```
-sudo cp ~/meteo-scripts/check_status.conf /etc/supervisor/conf.d/
+sudo cp ~/meteo-scripts/meteo_check_status.conf /etc/supervisor/conf.d/
 ```
 
 Если нужны дополнительные параметры (например, `--debug`), добавляем их к командной
-строке в `/etc/supervisor/conf.d/check_status.conf`. Список параметров можно посмотреть
-с помощью `meteo-scripts/check_status.py --help`
+строке в `/etc/supervisor/conf.d/meteo_check_status.conf`. Список параметров можно посмотреть
+с помощью `meteo-scripts/meteo_check_status.py --help`
 
 По умолчанию сервис supervisor не запущен.
 ```
@@ -56,10 +65,10 @@ sudo systemctl enable supervisor.service
 sudo service supervisor start
 ```
 
-Лог скрипта находится в файле `/var/log/supervisor/check_status.log`
+Лог скрипта находится в файле `/var/log/supervisor/meteo_check_status.log`
 Остановить или запустить только скрипт, не затрагивая другие сервисы superviosrd
 (если есть):
 ```
-sudo supervisorctl stop check_status
-sudo supervisorctl start check_status
+sudo supervisorctl stop meteo_check_status
+sudo supervisorctl start meteo_check_status
 ```
