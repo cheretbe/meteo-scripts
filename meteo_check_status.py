@@ -173,20 +173,24 @@ def do_reboot():
   # with open(data_file, 'w') as config_file:
   #   config_data.write(config_file)
 
-def do_check():
+def do_check(no_ping):
   logger.debug('-- Starting check --')
   uptime = get_system_uptime()
   if uptime < datetime.timedelta(minutes=5):
     logger.info("System uptime is less than 5 minutes ({0}). Skipping check".format(uptime))
     return()
 
-  check_result = do_ping()
+  if no_ping:
+    logger.debug('--no-ping option is specified. Skipping ping')
+    check_result = True
+  else:
+    check_result = do_ping()
   # Can't use `and` here because of boolean short-circuit evaluation
   if not do_check_db():
     check_result = False
 
   if check_result:
-    logger.debug('Check result: Ok')
+    logger.info('Check result: Ok')
     #TODO: Reset reboot cycle record in data_file
   else:
     logger.info('Check result: Failure')
@@ -204,9 +208,11 @@ def main():
   try:
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', dest='debug', action='store_true', default=False,
-                        help='Increase logging verbosity')
+      help='Increase logging verbosity')
+    parser.add_argument('-p', '--no-ping', dest='no_ping', action='store_true', default=False,
+      help='Disable ping check')
     parser.add_argument('-s', '--sleep-time', dest='sleep_time', type=int, default=300,
-			help='Sleep time between checks in seconds (default: %(default)d)')
+      help='Sleep time between checks in seconds (default: %(default)d)')
     options = parser.parse_args()
 
     if options.debug:
@@ -220,7 +226,7 @@ def main():
       signal.signal(sig, signal_handler)
 
     while True:
-      do_check()
+      do_check(options.no_ping)
       time.sleep(options.sleep_time)
 
   except Exception as e:
