@@ -38,7 +38,7 @@ sudo apt-get -y install supervisor
 ```
 sudo visudo
 ```
-Добавить строку
+Добавить строку (если имя пользователя не meteo, то заменить)
 ```
 meteo ALL=NOPASSWD: /sbin/shutdown -r +1
 ```
