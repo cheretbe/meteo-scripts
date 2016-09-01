@@ -14,6 +14,8 @@ try:
   from configparser import ConfigParser
 except ImportError:
   from ConfigParser import ConfigParser  # ver. < 3.0
+import email.mime.text
+import socket
 
 # Filter class to log only messages with level lower than specified
 # http://stackoverflow.com/questions/2302315/how-can-info-and-debug-logging-message-be-sent-to-stdout-and-higher-level-messag/31459386#31459386
@@ -157,6 +159,18 @@ def do_check_db():
 
   return(True)
 
+def send_mail_to_root():
+  logger.debug('Sending mail to root')
+  msg = email.mime.text.MIMEText('Script path: {0}\n'.format(os.path.realpath(__file__)) +
+    'Rebooting {0} in 1 minute'.format(socket.gethostname()))
+  msg['From'] = socket.gethostname()
+  msg['To'] = 'root'
+  msg['Subject'] = 'Notification from meteo_check_status.py script'
+  sendmail_supbroc = subprocess.Popen(["/usr/sbin/sendmail", "-t", "-oi"],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  for output_line in sendmail_supbroc.communicate(msg.as_string())[0].splitlines():
+    logger.debug(output_line)
+
 def do_reboot():
   previous_reboot_timeout = read_reboot_timeout()
   try:
@@ -170,8 +184,8 @@ def do_reboot():
   reboot_timeout = datetime.timedelta(minutes=reboot_timeout_minutes)
   if uptime > reboot_timeout:
     write_reboot_timeout(reboot_timeout_minutes)
-    #TODO: send mail notification to root
-    logger.warning('*** Rebooting the system ***')
+    send_mail_to_root
+    logger.warning('*** Rebooting the system in 1 minute ***')
     # Delay reboot for 1 minute to give postifx an opportunity to deliver
     # message to and external server if root mail forwarding is enabled
     os.system('sudo /sbin/shutdown -r +1')

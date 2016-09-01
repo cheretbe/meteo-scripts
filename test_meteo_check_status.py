@@ -179,10 +179,12 @@ class read_reboot_timeout_FunctionalTest(unittest.TestCase):
 @mock.patch('meteo_check_status.write_reboot_timeout')
 @mock.patch('meteo_check_status.get_system_uptime')
 @mock.patch('meteo_check_status.os.system')
+@mock.patch('meteo_check_status.send_mail_to_root')
 class do_reboot_UnitTest(unittest.TestCase):
   """Unit tests for 'do_reboot' function"""
-  def test_reboot_is_allowed(self, mock_os_system, mock_get_system_uptime,
-      mock_write_reboot_timeout, mock_read_reboot_timeout, mock_logger):
+  def test_reboot_is_allowed(self, mock_send_mail_to_root, mock_os_system,
+      mock_get_system_uptime, mock_write_reboot_timeout, mock_read_reboot_timeout,
+      mock_logger):
     mock_read_reboot_timeout.return_value = 15
     mock_get_system_uptime.return_value = datetime.timedelta(minutes=31)
     meteo_check_status.do_reboot()
