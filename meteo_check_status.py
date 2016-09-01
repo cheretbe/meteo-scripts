@@ -51,6 +51,7 @@ weewx_db_file = '/var/lib/weewx/weewx.sdb'
 reboot_timeouts_map = {
   # previous_timeout: current_timeout
   None: 15,
+  0: 15,
   15:   30,
   30:   180, # 3h
   180:  720, # 3h, 12h
@@ -157,8 +158,6 @@ def do_reboot():
     reboot_timeout_minutes = reboot_timeouts_map[None]
   logger.debug('previous_reboot_timeout: {0}, reboot_timeout_minutes: {1}'.format(
     previous_reboot_timeout, reboot_timeout_minutes))
-  # print('previous_reboot_timeout: {0}, reboot_timeout_minutes: {1}'.format(
-  #  previous_reboot_timeout, reboot_timeout_minutes))
 
   uptime = get_system_uptime()
   reboot_timeout = datetime.timedelta(minutes=reboot_timeout_minutes)
@@ -169,9 +168,6 @@ def do_reboot():
   else:
     logger.info('System uptime ({0}) is less then the minimum, allowed before ' \
       'reboot ({1}). Skipping reboot'.format(uptime, reboot_timeout))
-
-  # with open(data_file, 'w') as config_file:
-  #   config_data.write(config_file)
 
 def do_check(no_ping):
   logger.debug('-- Starting check --')
@@ -191,7 +187,8 @@ def do_check(no_ping):
 
   if check_result:
     logger.info('Check result: Ok')
-    #TODO: Reset reboot cycle record in data_file
+    # Reset reboot timeout to default
+    write_reboot_timeout(0)
   else:
     logger.info('Check result: Failure')
     do_reboot()

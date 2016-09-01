@@ -266,5 +266,27 @@ class reboot_sequence_IntegrationTest(unittest.TestCase):
       {'uptime': 179, 'no_ping': False, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
       {'uptime': 181, 'no_ping': False, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
       {'uptime': 719, 'no_ping': False, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      # reboot
       {'uptime': 721, 'no_ping': False, 'ping_result': False, 'db_result': True, 'expect_reboot': True}
+    ))
+
+  def test_reboot_sequence_2(self):
+    """Reboot sequence with no ping check and DB fail and recover"""
+    self.run_sequence(None, (
+      {'uptime': 4,   'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': False},
+      {'uptime': 14,  'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': False},
+      {'uptime': 16,  'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': True},
+      # reboot
+      {'uptime': 4,   'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': False},
+      {'uptime': 14,  'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': False},
+      {'uptime': 16,  'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': False},
+      {'uptime': 29,  'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': False},
+      {'uptime': 31,  'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': True},
+      # reboot
+      {'uptime': 4,   'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': False},
+      # recover, timeout resets to default
+      {'uptime': 13,  'no_ping': True, 'ping_result': False, 'db_result': True, 'expect_reboot': False},
+      {'uptime': 14,  'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': False},
+      # reboot
+      {'uptime': 16,  'no_ping': True, 'ping_result': False, 'db_result': False, 'expect_reboot': True}
     ))
