@@ -11,20 +11,20 @@ import sqlite3
 import contextlib
 import datetime
 try:
-    from configparser import ConfigParser
+  from configparser import ConfigParser
 except ImportError:
-    from ConfigParser import ConfigParser  # ver. < 3.0
+  from ConfigParser import ConfigParser  # ver. < 3.0
 
 # Filter class to log only messages with level lower than specified
 # http://stackoverflow.com/questions/2302315/how-can-info-and-debug-logging-message-be-sent-to-stdout-and-higher-level-messag/31459386#31459386
 class LevelLessThanFilter(logging.Filter):
-    def __init__(self, exclusive_maximum, name=""):
-        super(LevelLessThanFilter, self).__init__(name)
-        self.max_level = exclusive_maximum
+  def __init__(self, exclusive_maximum, name=""):
+    super(LevelLessThanFilter, self).__init__(name)
+    self.max_level = exclusive_maximum
 
-    def filter(self, record):
-        # Non-zero return means we log this message
-        return 1 if record.levelno < self.max_level else 0
+  def filter(self, record):
+    # Non-zero return means we log this message
+    return 1 if record.levelno < self.max_level else 0
 
 # Root logger. Accepts all levels of messages, but doesn't output anything.
 # Additional handlers will take care of that.
@@ -45,6 +45,7 @@ stderr_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(mess
 stderr_handler.setLevel(logging.WARNING)
 logger.addHandler(stderr_handler)
 
+# File name to save timeout data between reboots
 data_file = os.path.expanduser('~/.meteo_check_status')
 signals_to_handle = {signal.SIGTERM:'SIGTERM', signal.SIGINT:'SIGINT', signal.SIGHUP:'SIGHUP', signal.SIGQUIT:'SIGQUIT'}
 weewx_db_file = '/var/lib/weewx/weewx.sdb'
@@ -57,6 +58,11 @@ reboot_timeouts_map = {
   180:  720, # 3h, 12h
   720:  720  # 12h
 }
+ping_count = 3
+# Skip check if uptime is less than this period of time (minutes)
+min_uptime_before_check = 5
+# If there is no meteo data for this period of time (in minutes), DB check will fail
+no_db_records_threshold = 15
 
 def get_system_uptime():
   # proc/uptime contains two numbers: the uptime of the system (seconds), and the
@@ -98,7 +104,8 @@ def do_ping():
   # We use DNS names instead of IPs for Google and OpenDNS NS to ensure that DNS resolution works
   for ping_target in ['google-public-dns-a.google.com', 'resolver1.opendns.com', 'ya.ru']:
     # Create ping subprocess
-    ping_subproc = subprocess.Popen(["ping", "-c 3", ping_target], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    ping_subproc = subprocess.Popen(["ping", "-c {0}".format(ping_count), ping_target],
+      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     # Wait for exit and get output
     for ping_output_line in ping_subproc.communicate()[0].splitlines():
       logger.debug(ping_output_line)
@@ -117,7 +124,7 @@ def do_check_db():
   """Checks wind records presence in the Weewx DB.
 
      Returns True if there is at least one valid (non-NULL) wind record with
-     timestamp within last 15 minutes.
+     timestamp within specified amount of time (no_db_records_threshold).
 
      Returns:
        bool: The return value. True for success, False otherwise.
@@ -131,11 +138,11 @@ def do_check_db():
     with contextlib.closing(conn.cursor()) as cursor:
       wind_records = cursor.execute(
         'SELECT windSpeed, datetime(dateTime, "unixepoch", "localtime") AS dt, ' \
-        'dateTime FROM archive WHERE dt >= datetime("now", "-15 Minute", "localtime") ' \
-        'ORDER BY dt DESC').fetchall()
+        'dateTime FROM archive WHERE dt >= datetime("now", "-{0} Minute", "localtime") ' \
+        'ORDER BY dt DESC'.format(no_db_records_threshold)).fetchall()
 
       if len(wind_records) == 0:
-        logger.error('No records in the Weewx DB file for the last 15min')
+        logger.error('No records in the Weewx DB file for the last {0}min'.format(no_db_records_threshold))
         return(False)
 
       has_wind_speed = False
@@ -145,7 +152,7 @@ def do_check_db():
           has_wind_speed = True
           break
       if not(has_wind_speed):
-        logger.error('No wind data for the last 15min in the Weewx DB file')
+        logger.error('No wind data for the last {0}min in the Weewx DB file'.format(no_db_records_threshold))
         return(False)
 
   return(True)
@@ -172,8 +179,9 @@ def do_reboot():
 def do_check(no_ping):
   logger.debug('-- Starting check --')
   uptime = get_system_uptime()
-  if uptime < datetime.timedelta(minutes=5):
-    logger.info("System uptime is less than 5 minutes ({0}). Skipping check".format(uptime))
+  if uptime < datetime.timedelta(minutes=min_uptime_before_check):
+    logger.info("System uptime is less than {0} minutes ({1}). " \
+      "Skipping check".format(min_uptime_before_check, uptime))
     return()
 
   if no_ping:
