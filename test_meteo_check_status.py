@@ -186,12 +186,12 @@ class do_reboot_UnitTest(unittest.TestCase):
     mock_read_reboot_timeout.return_value = 15
     mock_get_system_uptime.return_value = datetime.timedelta(minutes=31)
     meteo_check_status.do_reboot()
-    mock_os_system.assert_called_with('sudo reboot')
+    mock_os_system.assert_called_with('sudo /sbin/shutdown -r +1')
 
     mock_read_reboot_timeout.return_value = None
     mock_get_system_uptime.return_value = datetime.timedelta(minutes=16)
     meteo_check_status.do_reboot()
-    mock_os_system.assert_called_with('sudo reboot')
+    mock_os_system.assert_called_with('sudo /sbin/shutdown -r +1')
 
 class reboot_sequence_IntegrationTest(unittest.TestCase):
   """Integration tests to ensure proper reboot timeouts on different stages"""
@@ -219,7 +219,7 @@ class reboot_sequence_IntegrationTest(unittest.TestCase):
         meteo_check_status.do_check(call['no_ping'])
 
         if call['expect_reboot']:
-          mock_os_system.assert_called_with('sudo reboot')
+          mock_os_system.assert_called_with('sudo /sbin/shutdown -r +1')
         else:
           mock_os_system.assert_not_called()
 

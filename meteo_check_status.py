@@ -170,8 +170,11 @@ def do_reboot():
   reboot_timeout = datetime.timedelta(minutes=reboot_timeout_minutes)
   if uptime > reboot_timeout:
     write_reboot_timeout(reboot_timeout_minutes)
+    #TODO: send mail notification to root
     logger.warning('*** Rebooting the system ***')
-    os.system('sudo reboot')
+    # Delay reboot for 1 minute to give postifx an opportunity to deliver
+    # message to and external server if root mail forwarding is enabled
+    os.system('sudo /sbin/shutdown -r +1')
   else:
     logger.info('System uptime ({0}) is less then the minimum, allowed before ' \
       'reboot ({1}). Skipping reboot'.format(uptime, reboot_timeout))
