@@ -184,7 +184,7 @@ def do_reboot():
   reboot_timeout = datetime.timedelta(minutes=reboot_timeout_minutes)
   if uptime > reboot_timeout:
     write_reboot_timeout(reboot_timeout_minutes)
-    send_mail_to_root
+    send_mail_to_root()
     logger.warning('*** Rebooting the system in 1 minute ***')
     # Delay reboot for 1 minute to give postifx an opportunity to deliver
     # message to and external server if root mail forwarding is enabled
