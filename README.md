@@ -8,6 +8,7 @@ It sends administrative emails or reboots the server as needed.
 * Установленный и настроенный weewx (http://www.weewx.com/)
 * Supervisord
 * Аккаунт, для которого в sudoers разрешена перезагрузка без пароля
+* Настроенный sendmail
 
 ### Установка и настройка (Ubuntu 16.04)
 
@@ -117,3 +118,16 @@ sudo service supervisor start
 sudo supervisorctl stop meteo_check_status
 sudo supervisorctl start meteo_check_status
 ```
+
+При перезагрузке скрипт отправляет сообщение пользователю root с помощью sendmail.
+Предполагается, что sendmail настроен и знает что делать с почтой. Самый простой
+способ настройки: локальная доставка. Для этого нужно установить пакет `postfix` и
+в диалоге настройки выбрать "Local delivery", остальные настройки оставить по
+умолчанию. После этого установить, например, `mutt` и просматривать почту с его
+помощью в терминале под аккунтом root.
+```
+sudo apt-get install postfix mutt
+sudo mutt
+```
+Хотя лучше, конечно, настроить перенаправление на какой-нибудь регулярно
+читаемый адрес с помощью алиаса в `/etc/aliases` и SMTP relay.
