@@ -118,6 +118,14 @@ sudo service supervisor start
 sudo supervisorctl stop meteo_check_status
 sudo supervisorctl start meteo_check_status
 ```
+У supervisord есть особенность: он не перечитывает конфигурационные файлы из
+`/etc/supervisor/conf.d/` если его перезапустить с помощью команды
+`service supervisor restart`. Чтобы перечитать заново изменённые конфигурационные
+файлы и перезапустить только сервисы, которые изменились:
+```
+sudo supervisorctl reread
+sudo supervisorctl update
+```
 
 При перезагрузке скрипт отправляет сообщение пользователю root с помощью sendmail.
 Предполагается, что sendmail настроен и знает что делать с почтой. Самый простой
@@ -130,4 +138,5 @@ sudo apt-get install postfix mutt
 sudo mutt
 ```
 Хотя лучше, конечно, настроить перенаправление на какой-нибудь регулярно
-читаемый адрес с помощью алиаса в `/etc/aliases` и SMTP relay.
+читаемый адрес с помощью алиаса в `/etc/aliases` и SMTP relay. Например, используя
+gmail как описано [здесь](https://easyengine.io/tutorials/linux/ubuntu-postfix-gmail-smtp/).
