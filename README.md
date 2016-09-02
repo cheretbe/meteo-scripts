@@ -1,7 +1,7 @@
 A simple python script to monitor state of a headless weewx server (internet connection, meteo data).
-It sends administrative emails or reboots the server as needed.
+It sends administrative emails and reboots the server as needed.
 Небольшой python скрипт для мониторинга состояния сервера weewx (интернет соединение, метеоданные).
-Отправляет email сообщения администратору или перезагружает сервер при необходимости.
+Отправляет email сообщения администратору и перезагружает сервер при необходимости.
 
 ### Требования к системе
 * Linux с установленным python (протестировано на Ubuntu 16.04, python 2.7 и 3.5)
